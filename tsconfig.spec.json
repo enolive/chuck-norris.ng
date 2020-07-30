@@ -5,10 +5,12 @@
     "types": [
       "jest",
       "node"
-    ]
+    ],
+    "esModuleInterop": true,
+    "emitDecoratorMetadata": true
   },
   "files": [
-    "src/karmaTest.ts",
+    "src/setup-jest.ts",
     "src/polyfills.ts"
   ],
   "include": [

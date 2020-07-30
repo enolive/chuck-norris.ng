@@ -1,31 +1,65 @@
-import { TestBed, async } from '@angular/core/testing';
-import { AppComponent } from './app.component';
+import {AppComponent} from './app.component';
+import {fireEvent, render} from '@testing-library/angular';
+import {HttpClient, HttpClientModule} from '@angular/common/http';
+import {createMock} from '@testing-library/angular/jest-utils';
+import {of} from 'rxjs';
 
 describe('AppComponent', () => {
-  beforeEach(async(() => {
-    TestBed.configureTestingModule({
-      declarations: [
-        AppComponent
-      ],
-    }).compileComponents();
-  }));
+  test('is rendered', async () => {
+    const component = await render(AppComponent, {
+      componentProperties: {
+        title: 'Chuck Norris',
+        jokeText: 'Random Joke'
+      },
+      imports: [
+        HttpClientModule,
+      ]
+    });
 
-  it('should create the app', () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.componentInstance;
-    expect(app).toBeTruthy();
+    expect(component.container).toMatchSnapshot();
   });
 
-  it(`should have as title 'chuck-norris-ng'`, () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.componentInstance;
-    expect(app.title).toEqual('chuck-norris-ng');
+  test('refreshes joke on click', async () => {
+    const expectedJoke = 'Chuck Norris uses canvas in IE.';
+    const http = createMock(HttpClient);
+    http.get = jest.fn().mockReturnValue(of({
+      type: 'success',
+      value: {id: 535, joke: expectedJoke, categories: ['nerdy']}
+    }));
+    const component = await render(AppComponent, {
+      providers: [
+        {provide: HttpClient, useValue: http},
+      ]
+    });
+
+    const button = component.getByRole('button');
+    fireEvent.click(button);
+
+    expect(http.get).toHaveBeenCalledTimes(2);
+    expect(http.get).toHaveBeenCalledWith('http://api.icndb.com/jokes/random');
+    expect(component.fixture.componentInstance.jokeText).toBe(expectedJoke);
+    expect(component.getByRole('status')).toHaveTextContent(expectedJoke);
   });
 
-  it('should render title', () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    fixture.detectChanges();
-    const compiled = fixture.nativeElement;
-    expect(compiled.querySelector('.content span').textContent).toContain('chuck-norris-ng app is running!');
+  test('refreshes joke on init', async () => {
+    const http = createMock(HttpClient);
+    http.get = jest.fn().mockReturnValue(of({value: {joke: 'joke'}}));
+    await render(AppComponent, {
+      providers: [
+        {provide: HttpClient, useValue: http},
+      ]
+    });
+    expect(http.get).toHaveBeenCalledTimes(1);
+  });
+
+  test('renders quotes from joke', async () => {
+    const http = createMock(HttpClient);
+    http.get = jest.fn().mockReturnValue(of({value: {joke: '&quot;&quot;&quot;'}}));
+    const component = await render(AppComponent, {
+      providers: [
+        {provide: HttpClient, useValue: http},
+      ]
+    });
+    expect(component.fixture.componentInstance.jokeText).toBe('"""');
   });
 });

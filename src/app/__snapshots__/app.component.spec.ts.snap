@@ -1,0 +1,23 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`AppComponent is rendered 1`] = `
+<div
+  id="root0"
+>
+  <h1>
+    Chuck Norris
+  </h1>
+  <img
+    alt="Chuck Norris Approves!"
+    src="../assets/chuck-norris-logo.jpg"
+  />
+  <p
+    role="status"
+  >
+    Random Joke
+  </p>
+  <button>
+    Refresh
+  </button>
+</div>
+`;
