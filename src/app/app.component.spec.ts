@@ -1,12 +1,25 @@
 import {AppComponent} from './app.component';
-import {fireEvent, render} from '@testing-library/angular';
+import {fireEvent, render, RenderResult} from '@testing-library/angular';
 import {HttpClient, HttpClientModule} from '@angular/common/http';
-import {createMock} from '@testing-library/angular/jest-utils';
+import {createMock, Mock} from '@testing-library/angular/jest-utils';
 import {of} from 'rxjs';
 
 describe('AppComponent', () => {
+  let httpMock: Mock<HttpClient>;
+
+  const renderWithMock = async (): Promise<RenderResult<AppComponent, AppComponent>> =>
+    await render(AppComponent, {
+      providers: [
+        {provide: HttpClient, useValue: httpMock},
+      ]
+    });
+
+  beforeEach(() => {
+    httpMock = createMock(HttpClient);
+  });
+
   test('is rendered', async () => {
-    const component = await render(AppComponent, {
+    const {container} = await render(AppComponent, {
       componentProperties: {
         title: 'Chuck Norris',
         jokeText: 'Random Joke'
@@ -16,50 +29,39 @@ describe('AppComponent', () => {
       ]
     });
 
-    expect(component.container).toMatchSnapshot();
+    expect(container).toMatchSnapshot();
   });
 
   test('refreshes joke on click', async () => {
     const expectedJoke = 'Chuck Norris uses canvas in IE.';
-    const http = createMock(HttpClient);
-    http.get = jest.fn().mockReturnValue(of({
+    httpMock.get = jest.fn().mockReturnValue(of({
       type: 'success',
       value: {id: 535, joke: expectedJoke, categories: ['nerdy']}
     }));
-    const component = await render(AppComponent, {
-      providers: [
-        {provide: HttpClient, useValue: http},
-      ]
-    });
+    const {fixture, getByRole} = await renderWithMock();
+    const button = getByRole('button');
 
-    const button = component.getByRole('button');
     fireEvent.click(button);
 
-    expect(http.get).toHaveBeenCalledTimes(2);
-    expect(http.get).toHaveBeenCalledWith('http://api.icndb.com/jokes/random');
-    expect(component.fixture.componentInstance.jokeText).toBe(expectedJoke);
-    expect(component.getByRole('status')).toHaveTextContent(expectedJoke);
+    expect(httpMock.get).toHaveBeenCalledTimes(2);
+    expect(httpMock.get).toHaveBeenCalledWith('http://api.icndb.com/jokes/random');
+    expect(fixture.componentInstance.jokeText).toBe(expectedJoke);
+    expect(getByRole('status')).toHaveTextContent(expectedJoke);
   });
 
   test('refreshes joke on init', async () => {
-    const http = createMock(HttpClient);
-    http.get = jest.fn().mockReturnValue(of({value: {joke: 'joke'}}));
-    await render(AppComponent, {
-      providers: [
-        {provide: HttpClient, useValue: http},
-      ]
-    });
-    expect(http.get).toHaveBeenCalledTimes(1);
+    httpMock.get = jest.fn().mockReturnValue(of({value: {joke: 'joke'}}));
+
+    await renderWithMock();
+
+    expect(httpMock.get).toHaveBeenCalledTimes(1);
   });
 
   test('renders quotes from joke', async () => {
-    const http = createMock(HttpClient);
-    http.get = jest.fn().mockReturnValue(of({value: {joke: '&quot;&quot;&quot;'}}));
-    const component = await render(AppComponent, {
-      providers: [
-        {provide: HttpClient, useValue: http},
-      ]
-    });
-    expect(component.fixture.componentInstance.jokeText).toBe('"""');
+    httpMock.get = jest.fn().mockReturnValue(of({value: {joke: '&quot;&quot;&quot;'}}));
+
+    const {fixture} = await renderWithMock();
+
+    expect(fixture.componentInstance.jokeText).toBe('"""');
   });
 });

@@ -1,6 +1,7 @@
 # ChuckNorrisNg
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 9.1.12.
+Simple show case for using jest and @testing-library/angular instead of the default
+tool chain in an angular app.
 
 ## Development server
 
